@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
@@ -36,10 +38,6 @@ func SetupOTelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 		err = errors.Join(inErr, shutdown(ctx))
 	}
 
-	// Set up propagator.
-	//prop := newPropagator()
-	//otel.SetTextMapPropagator(prop)
-
 	// Set up trace provider.
 	tracerProvider, err := newTraceProvider()
 	if err != nil {
@@ -50,16 +48,16 @@ func SetupOTelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 	otel.SetTracerProvider(tracerProvider)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
-	//// Set up meter provider.
-	//meterProvider, err := newMeterProvider()
-	//if err != nil {
-	//	handleErr(err)
-	//	return
-	//}
-	//shutdownFuncs = append(shutdownFuncs, meterProvider.Shutdown)
-	//otel.SetMeterProvider(meterProvider)
-	//
-	//// Set up logger provider.
+	// Set up meter provider.
+	meterProvider, err := newMeterProvider()
+	if err != nil {
+		handleErr(err)
+		return
+	}
+	shutdownFuncs = append(shutdownFuncs, meterProvider.Shutdown)
+	otel.SetMeterProvider(meterProvider)
+
+	// Set up logger provider.
 	//loggerProvider, err := newLoggerProvider()
 	//if err != nil {
 	//	handleErr(err)
@@ -79,7 +77,7 @@ func newTraceProvider() (*trace.TracerProvider, error) {
 	exporter, err := otlptrace.New(
 		context.Background(),
 		otlptracehttp.NewClient(
-			otlptracehttp.WithEndpoint("jaeger:4318"),
+			otlptracehttp.WithEndpoint("grafana:4318"),
 			otlptracehttp.WithHeaders(headers),
 			otlptracehttp.WithInsecure(),
 		),
@@ -105,4 +103,20 @@ func newTraceProvider() (*trace.TracerProvider, error) {
 	)
 
 	return traceProvider, nil
+}
+
+func newMeterProvider() (*metric.MeterProvider, error) {
+	exporter, err := otlpmetrichttp.New(
+		context.Background(),
+		otlpmetrichttp.WithEndpoint("grafana:4318"),
+		otlpmetrichttp.WithInsecure(),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	meterProvider := metric.NewMeterProvider(metric.WithReader(metric.NewPeriodicReader(exporter)))
+
+	return meterProvider, nil
 }

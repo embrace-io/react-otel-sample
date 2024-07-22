@@ -4,12 +4,16 @@ import {
   WebTracerProvider,
   SimpleSpanProcessor,
 } from "@opentelemetry/sdk-trace-web";
-import { ConsoleSpanExporter } from "@opentelemetry/sdk-trace-base";
-import { trace } from "@opentelemetry/api";
+import { metrics, trace } from "@opentelemetry/api";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { FetchInstrumentation } from "@opentelemetry/instrumentation-fetch";
 import { registerInstrumentations } from "@opentelemetry/instrumentation";
 import { DocumentLoadInstrumentation } from "@opentelemetry/instrumentation-document-load";
+import {
+  MeterProvider,
+  PeriodicExportingMetricReader,
+} from "@opentelemetry/sdk-metrics";
+import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 
 const setupOTelSDK = () => {
   const resource = Resource.default().merge(
@@ -22,16 +26,28 @@ const setupOTelSDK = () => {
     resource: resource,
   });
 
-  const exporter = new ConsoleSpanExporter();
   const collectorExporter = new OTLPTraceExporter({
-    url: "http://localhost:4318/v1/traces",
+    url: "http://localhost:7070/v1/traces",
     headers: {},
   });
 
-  const processor = new SimpleSpanProcessor(exporter);
   const collectorProcessor = new SimpleSpanProcessor(collectorExporter);
 
-  provider.addSpanProcessor(processor);
+  const metricsCollectorExporter = new OTLPMetricExporter({
+    url: "http://localhost:7070/v1/metrics",
+    headers: {},
+  });
+  const metricReader = new PeriodicExportingMetricReader({
+    exporter: metricsCollectorExporter,
+    // Default is 60000ms (60 seconds). Set to 10 seconds for demonstrative purposes only.
+    exportIntervalMillis: 10000,
+  });
+
+  const myServiceMeterProvider = new MeterProvider({
+    resource: resource,
+    readers: [metricReader],
+  });
+
   provider.addSpanProcessor(collectorProcessor);
   provider.register();
 
@@ -46,6 +62,7 @@ const setupOTelSDK = () => {
     ],
   });
 
+  metrics.setGlobalMeterProvider(myServiceMeterProvider);
   trace.setGlobalTracerProvider(provider);
 };
 
