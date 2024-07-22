@@ -64,5 +64,18 @@ func main() {
 		c.JSON(http.StatusOK, products)
 	})
 
+	r.GET("/products/:id", func(c *gin.Context) {
+		var product models.Product
+
+		result := db.WithContext(c.Request.Context()).First(&product, c.Param("id"))
+
+		if result.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error})
+			return
+		}
+
+		c.JSON(http.StatusOK, product)
+	})
+
 	r.Run()
 }

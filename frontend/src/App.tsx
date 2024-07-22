@@ -1,16 +1,16 @@
-import "./App.css";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
-
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <Home />,
-  },
-]);
+import ProductDetails from "./pages/ProductDetails";
 
 const App = () => {
-  return <RouterProvider router={router} />;
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/products/:productId" element={<ProductDetails />} />
+      </Routes>
+    </BrowserRouter>
+  );
 };
 
 export default App;

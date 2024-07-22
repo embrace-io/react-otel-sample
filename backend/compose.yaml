@@ -10,7 +10,9 @@ services:
     networks:
       - backend
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    restart: on-failure
 
   jaeger:
     image: jaegertracing/all-in-one:1.58.0
@@ -32,6 +34,11 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: [ "CMD", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 networks:
   backend:

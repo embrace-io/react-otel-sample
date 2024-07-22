@@ -1,0 +1,1 @@
+update products set description = 'This is a new product' where name = 'Traces';

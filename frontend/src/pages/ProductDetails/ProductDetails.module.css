@@ -1,0 +1,36 @@
+.title {
+    font-size: 72px;
+    margin-bottom: 16px;
+}
+
+.productName {
+    font-size: 36px;
+}
+
+.product {
+    display: grid;
+    grid-template-columns: 500px 500px;
+    grid-column-gap: 8px;
+}
+
+.productImage {
+    max-width: 100%;
+}
+
+.productDescription {
+    margin: 0;
+    font-size: 16px;
+}
+
+.productPrice {
+    font-size: 32px;
+    max-width: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+
+.buyButton {
+    font-size: 20px;
+}
