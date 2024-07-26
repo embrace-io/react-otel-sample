@@ -5,6 +5,7 @@ import fakeProductPicture from "../../../../../../assets/fake-product-picture.pn
 
 import styles from "./Product.module.css";
 import { useNavigate } from "react-router-dom";
+import useSpansContext from "../../../../../../components/SpansProvider/hooks/useSpansContext";
 
 type ProductProps = {
   product: ProductType;
@@ -12,8 +13,15 @@ type ProductProps = {
 
 const Product: FC<ProductProps> = ({ product }) => {
   const navigate = useNavigate();
+  const { getOrCreateSpan } = useSpansContext();
 
   const handleOnClick = () => {
+    const [activeSpan] = getOrCreateSpan("Purchase Flow");
+
+    activeSpan.addEvent("Product Clicked", {
+      product_id: product.id,
+    });
+
     navigate(`/products/${product.id}`);
   };
 

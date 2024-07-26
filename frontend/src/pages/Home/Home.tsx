@@ -3,6 +3,8 @@ import ProductsList from "./components/ProductsList/ProductsList";
 
 import styles from "./Home.module.css";
 import Container from "../../components/Container/Container";
+import Page from "../../components/Page";
+import useSpansContext from "../../components/SpansProvider/hooks/useSpansContext";
 
 type Product = {
   id: number;
@@ -14,9 +16,20 @@ type Product = {
 
 const Home = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const { getOrCreateSpan, withSpanContext } = useSpansContext();
+
+  const [purchaseFlowSpan, purchaseFlowSpanCreated] =
+    getOrCreateSpan("Purchase Flow");
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    if (purchaseFlowSpanCreated) {
+      purchaseFlowSpan.addEvent("Home Page Visited");
+      purchaseFlowSpan.setAttribute("user_id", 123);
+    }
+  }, [purchaseFlowSpan, purchaseFlowSpanCreated]);
+
+  useEffect(() => {
+    withSpanContext("Page Ready", async () => {
       try {
         const response = await fetch("http://localhost:8080/products");
         const data = await response.json();
@@ -25,22 +38,21 @@ const Home = () => {
       } catch (e) {
         console.error(e);
       }
-    };
-
-    fetchProducts();
-  }, []);
-
-  if (products.length === 0) {
-    return <div>Loading</div>;
-  }
+    });
+  }, [withSpanContext]);
 
   return (
-    <Container>
-      <h1 className={styles.title}>
-        The <span className={styles.highlight}>OpenTelemetry</span> Store
-      </h1>
-      <ProductsList products={products} />
-    </Container>
+    <Page
+      instrumentation={{ pageName: "Home" }}
+      isLoading={products.length === 0}
+    >
+      <Container>
+        <h1 className={styles.title}>
+          The <span className={styles.highlight}>OpenTelemetry</span> Store
+        </h1>
+        <ProductsList products={products} />
+      </Container>
+    </Page>
   );
 };
 

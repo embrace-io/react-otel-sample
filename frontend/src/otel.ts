@@ -1,8 +1,8 @@
 import { Resource } from "@opentelemetry/resources";
 import { SEMRESATTRS_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
 import {
-  WebTracerProvider,
   SimpleSpanProcessor,
+  WebTracerProvider,
 } from "@opentelemetry/sdk-trace-web";
 import { metrics, trace } from "@opentelemetry/api";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
@@ -13,7 +13,7 @@ import {
   MeterProvider,
   PeriodicExportingMetricReader,
 } from "@opentelemetry/sdk-metrics";
-import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
+import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http/build/src/platform/browser";
 
 const setupOTelSDK = () => {
   const resource = Resource.default().merge(
@@ -22,34 +22,37 @@ const setupOTelSDK = () => {
     }),
   );
 
-  const provider = new WebTracerProvider({
+  const tracerProvider = new WebTracerProvider({
     resource: resource,
   });
 
-  const collectorExporter = new OTLPTraceExporter({
+  const traceExporter = new OTLPTraceExporter({
     url: "http://localhost:7070/v1/traces",
     headers: {},
   });
 
-  const collectorProcessor = new SimpleSpanProcessor(collectorExporter);
+  const spanProcessor = new SimpleSpanProcessor(traceExporter);
 
-  const metricsCollectorExporter = new OTLPMetricExporter({
+  const metricExporter = new OTLPMetricExporter({
     url: "http://localhost:7070/v1/metrics",
     headers: {},
   });
   const metricReader = new PeriodicExportingMetricReader({
-    exporter: metricsCollectorExporter,
+    exporter: metricExporter,
     // Default is 60000ms (60 seconds). Set to 10 seconds for demonstrative purposes only.
     exportIntervalMillis: 10000,
   });
 
-  const myServiceMeterProvider = new MeterProvider({
+  const meterProvider = new MeterProvider({
     resource: resource,
     readers: [metricReader],
   });
 
-  provider.addSpanProcessor(collectorProcessor);
-  provider.register();
+  metrics.setGlobalMeterProvider(meterProvider);
+
+  tracerProvider.addSpanProcessor(spanProcessor);
+  tracerProvider.register();
+  trace.setGlobalTracerProvider(tracerProvider);
 
   registerInstrumentations({
     instrumentations: [
@@ -61,9 +64,8 @@ const setupOTelSDK = () => {
       new DocumentLoadInstrumentation(),
     ],
   });
-
-  metrics.setGlobalMeterProvider(myServiceMeterProvider);
-  trace.setGlobalTracerProvider(provider);
 };
 
 export { setupOTelSDK };
+
+1721913883463000000;
