@@ -1,4 +1,4 @@
-FROM grafana/otel-lgtm
+FROM grafana/otel-lgtm@v0.8.2
 
 COPY tempo-config.yaml .
 
